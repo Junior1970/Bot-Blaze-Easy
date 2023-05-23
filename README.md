@@ -37,7 +37,7 @@ Antes de executar o bot, certifique-se de ter o seguinte:
 Para executar o bot, digite o seguinte comando:
 
 ```bash
-node index.js
+node blaze.js
 ```
 
 O bot abrirá uma janela do navegador, acessará a página do jogo "Double" e fará login usando as credenciais fornecidas. Em seguida, ele começará a fazer apostas com base na estratégia implementada. A estratégia envolve selecionar a cor da aposta (vermelho ou preto) com base nos resultados anteriores e ajustar o valor da aposta usando um sistema de martingale.
