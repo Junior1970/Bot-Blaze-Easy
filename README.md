@@ -30,6 +30,7 @@ Antes de executar o bot, certifique-se de ter o seguinte:
 
    ```bash
    npm install dotenv
+   npm install pupperteer
    ```
 
 ## Uso
