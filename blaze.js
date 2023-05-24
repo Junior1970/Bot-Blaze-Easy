@@ -1,20 +1,28 @@
 const puppeteer = require('puppeteer');
 console.log("BEM VINDO !");
 
-let cash = 24.13; // Valor presente na conta real
-let base = 0.10; // Aposta base
-let base2 = '0.10'; // Aposta base (string)
+// configurar as variáveis de ambiente
+var flag = 0;
+var buffer = ["null", "null"];
+var valor = 0;
+var flagRed = 0;
+var flagBlack = 0;
+var cash = 24.13; // Valor presente na conta real
+var aposta = 0.0;
+var acumulado = 0.0;
+var base = 0.10; // Aposta base
+var base2 = '0.10'; // Aposta base (string)
 let globalBase = 0.10; // Aposta global
-let martingaleCount = 0; // Contador de martingale
-const maxMartingaleCount = 2; // Limite máximo de martingale permitido
+var firstTime = 0;
+var martingaleCount = 0; // Contador de martingale
+const maxMartingaleCount = 1; // Limite máximo de martingale permitido
 
-// Importar a biblioteca dotenv e configurar as variáveis de ambiente
+// Importar a biblioteca dotenv
 require('dotenv').config();
 
 // Acessar as variáveis de ambiente do arquivo .env
 const usuario = process.env.USUARIO;
 const senha = process.env.SENHA;
-
 
 (async () => {
   console.log('Abrindo navegador...')
@@ -54,10 +62,13 @@ const senha = process.env.SENHA;
 
   while (true) {
     try {
-      const data = await page.evaluate(() => {
-        const num = Number(document.querySelector('[class="entry"]').innerText);
-        const time = document.querySelector('[class="time-left"]').innerText;
-        const currency = document.querySelector('[class=" currency"]').innerText
+      data = await page.evaluate(() => {
+        let num = document.querySelector('[class="entry"]').innerText;
+        let time = document.querySelector('[class="time-left"]').innerText;
+        let currency = document.querySelector('[class=" currency"]').innerText
+
+        num = Number(num);
+        time = time.slice(0, 10);
 
         return {
           num,
@@ -66,12 +77,14 @@ const senha = process.env.SENHA;
         };
       });
 
-      const valor = data.num;
+      let test = Object.values(data);
+      let realCash = test[2];
+      valor = test[0];
 
-      if (data.time === "Girando Em") {
-        console.log(valor);
+      if (test[1] == "Girando Em" && flag == 0) {
+        console.log(test[0]);
+        flag = 1;
 
-        let buffer = ["null", "null"];
         if (valor > 7) {
           buffer[1] = buffer[0];
           buffer[0] = "Black";
@@ -85,60 +98,106 @@ const senha = process.env.SENHA;
 
         console.log("BUFFER: ", buffer);
 
-        if (buffer[0] === "Red" && buffer[1] === "Red") {
-          if (buffer[0] === "Black") {
-            cash = cash + globalBase;
+        if (buffer[0] == "Red" && buffer[1] == "Red") {
+          flagBlack = 1;
+        } else if (buffer[0] == "Black" && buffer[1] == "Black") {
+          flagRed = 1;
+        }
+
+        if (flagBlack == 1) {
+          if (buffer[0] == "Black") {
+            flagBlack = 0;
+            cash = cash + acumulado + globalBase;
             console.log("WINNNN");
-            console.log("RealCASH: ", data.currency);
+            console.log("RealCASH: ", realCash);
             martingaleCount = 0;
+            aposta = 0.0;
+            acumulado = 0;
+            base = globalBase;
+            firstTime = 0;
+            await page.click('[class="white "]');
           } else {
             cash = cash - base;
-            await page.type('[type="number"]', base.toString());
+            aposta = base;
+            acumulado = acumulado + aposta;
+            base2 = JSON.stringify(base);
+            await page.click('[type="number"]', { clickCount: 3 });
+            await page.type('[type="number"]', base2);
+
+            if (firstTime == 0) {
+              await page.click('[class="black "]');
+            }
             if (martingaleCount > maxMartingaleCount) {
               console.log("Limite G1.");
-              limiteG1 = true;
+              limiteG1 = true; // Define o limite G1 como verdadeiro
               martingaleCount = 0;
+              aposta = 0.0;
+              acumulado = 0;
               base = globalBase;
+              firstTime = 0;
+              await page.click('[class="white "]');
             } else {
               await page.click('[class="place-bet"]');
-              console.log("APOSTA: ", base);
+              console.log("APOSTA: ", aposta);
               console.log("COR ESCOLHIDA: ", "BLACK");
               base = base * 2;
+              firstTime = 1;
               martingaleCount++;
             }
           }
-        } else if (buffer[0] === "Black" && buffer[1] === "Black") {
-          if (buffer[0] === "Red") {
-            cash = cash + globalBase;
+        } else if (flagRed == 1) {
+          if (buffer[0] == "Red") {
+            flagRed = 0;
+            cash = cash + acumulado + globalBase;
             console.log("WINNNN");
-            console.log("RealCASH: ", data.currency);
+            console.log("RealCASH: ", realCash);
             martingaleCount = 0;
+            aposta = 0.0;
+            acumulado = 0;
+            base = globalBase;
+            firstTime = 0;
+            await page.click('[class="white "]');
           } else {
             cash = cash - base;
-            await page.type('[type="number"]', base.toString());
+            aposta = base;
+            acumulado = acumulado + aposta;
+            base2 = JSON.stringify(base);
+            await page.click('[type="number"]', { clickCount: 3 });
+            await page.type('[type="number"]', base2);
+
+            if (firstTime == 0) {
+              await page.click('[class="red "]');
+            }
             if (martingaleCount > maxMartingaleCount) {
               console.log("Limite G1.");
-              limiteG1 = true;
+              limiteG1 = true; // Define o limite G1 como verdadeiro
               martingaleCount = 0;
+              aposta = 0.0;
+              acumulado = 0;
               base = globalBase;
+              firstTime = 0;
+              await page.click('[class="white "]');
             } else {
               await page.click('[class="place-bet"]');
-              console.log("APOSTA: ", base);
+              console.log("APOSTA: ", aposta);
               console.log("COR ESCOLHIDA: ", "RED");
               base = base * 2;
+              firstTime = 1;
               martingaleCount++;
             }
           }
         }
+      } else if (test[1] == "Girando..." && flag == 1) {
+        flag = 0;
       }
     } catch {
       await page.waitForTimeout(3000);
     }
 
+    // Verifica se atingiu o limite G1 e reinicia o loop
     if (limiteG1) {
-      limiteG1 = false;
-      continue;
+      limiteG1 = false; // Redefine o limite G1 como falso
+      continue; // Reinicia o loop
     }
   }
 })();
-
